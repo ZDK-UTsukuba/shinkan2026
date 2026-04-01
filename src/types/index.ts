@@ -20,17 +20,13 @@ export interface ImageAttribute {
 }
 
 interface Image {
-  id: number;
+  id: string;
   attributes: {
     width: number;
     height: number;
-    url: string;
-    formats: {
-      thumbnail: ImageAttribute;
-      small?: ImageAttribute;
-      medium?: ImageAttribute;
-      large?: ImageAttribute;
-    };
+    mimeType: string;
+    filename: string;
+    path: string;
   };
 }
 
@@ -43,7 +39,6 @@ export interface MultipleImages {
 }
 
 interface Tag {
-  id: number;
   display_string: string;
 }
 
@@ -52,19 +47,20 @@ export interface Organization {
   attributes: {
     name: string;
     type: OrganizationCategory;
-    type_display: any;
+
+    name_kana: string;
     short_description: string;
     description: string;
     activity_date: string;
-    booth_location: string;
     activity_location: string;
-    suspended: boolean;
+    contacts_email?: string;
     contacts_x?: string;
     contacts_instagram?: string;
-    contacts_website?: string;
     contacts_line?: string;
-    contacts_email?: string;
-    organization_platform_id: number;
+    contacts_bluesky?: string;
+    contacts_fediverse?: string;
+    contacts_website?: string;
+    organization_platform_id: null;
     thumbnail: SingleImage;
     images: MultipleImages;
     tags: Tag[];

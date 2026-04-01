@@ -1,7 +1,7 @@
 ---
 import { Image } from "astro:assets";
 import Heart from "./Heart.astro";
-import type { OrganizationCategory, ImageSearchResult, SingleImage } from "../types";
+import type { OrganizationCategory, ImageAttribute } from "../types";
 import { lookupOrganizationCategoryName } from "../utils/organization";
 
 export type Props = {
@@ -9,7 +9,7 @@ export type Props = {
   name: string;
   category: OrganizationCategory;
   short_description: string;
-  thumbnail: ImageSearchResult;
+  thumbnail: ImageAttribute;
 };
 
 const { name, category, short_description, id, thumbnail } = Astro.props;

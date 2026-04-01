@@ -14,7 +14,7 @@ const { text, categories, faves } = Astro.props;
 const counts: any = process.env.CATEGORY_COUNTS ?? [];
 ---
 
-<form action="/" class="search container">
+<form class="search container">
   <span class="limit"></span>
   <fieldset class="keyword">
     <input type="text" name="q" size="10" placeholder="団体名・キーワードでフィルタ" value={text} />
@@ -137,7 +137,7 @@ const counts: any = process.env.CATEGORY_COUNTS ?? [];
 </style>
 
 <script>
-  const search = document.querySelector(".search")!;
+  const search = document.querySelector(".search")! as HTMLFormElement;
   const observer = new IntersectionObserver((entries) => {
     for (const entry of entries) {
       if (entry.isIntersecting) {
@@ -176,4 +176,42 @@ const counts: any = process.env.CATEGORY_COUNTS ?? [];
       checkbox.setAttribute("value", val);
     }
   }
+
+  const text = document.querySelector('.keyword input[type="text"]')! as HTMLInputElement;
+
+  // @ts-ignore
+  const pagefind = await import("/pagefind/pagefind.js");
+  await pagefind.init();
+
+  text.addEventListener("input", () => {
+    const query = text.value;
+    if (query.length > 0) {
+      pagefind.preload(query);
+    }
+  });
+
+  const searchOrgs = async () => {
+    const query = text.value;
+    const searchResults = await pagefind.search(query);
+    const orgs = await Promise.all(searchResults.results.map((r: any) => r.data()));
+
+    const ids = orgs
+      .map<string>((org) => org.url)
+      .flatMap((url) => {
+        const match = url.match(/orgs\/(\d+)/);
+        return match ? match[1] : null;
+      })
+      .filter((id) => id !== null);
+    return ids;
+  };
+
+  search.addEventListener("submit", (e) => {
+    e.preventDefault();
+    searchOrgs().then((ids) => {
+      const formData = new FormData(search);
+      formData.append("results", ids.join(","));
+      const params = new URLSearchParams(formData as any).toString();
+      window.location.href = `/?${params}`;
+    });
+  });
 </script>

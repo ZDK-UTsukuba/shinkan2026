@@ -3,8 +3,7 @@ import satori from "satori";
 import sharp from "sharp";
 import type { APIContext } from "astro";
 import { html } from "satori-html";
-import fetchApi from "../../lib/strapi";
-import type { Organization } from "../../types";
+import { getOrganizations } from "../../lib/organizations";
 
 import baseImageData from "../../../assets/og-image-template.png?arraybuffer";
 import fontData from "../../../assets/FOT-TsukuARdGothicStd-B.otf?arraybuffer";
@@ -12,10 +11,7 @@ import fontData from "../../../assets/FOT-TsukuARdGothicStd-B.otf?arraybuffer";
 const baseImage = btoa(arrayBufferToBinaryString(baseImageData));
 
 export async function getStaticPaths() {
-  const organizations = await fetchApi<Organization[]>({
-    endpoint: "organizations?populate=images&populate=tags",
-    wrappedByKey: "data",
-  });
+  const organizations = await getOrganizations();
 
   return organizations.map((org) => ({
     params: { id: String(org.id) },

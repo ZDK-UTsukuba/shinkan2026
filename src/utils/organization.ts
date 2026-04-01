@@ -28,7 +28,7 @@ export function enumerateContactInfomations(org: Organization) {
   }[] = [];
   const attr = org.attributes;
   for (const [key, val] of Object.entries(attr)) {
-    if (key.startsWith("contacts_") && val) {
+    if (key.startsWith("contacts_") && val && typeof val === "string") {
       const name = key.slice(9);
       const value = val.trim();
       ret.push({

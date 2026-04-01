@@ -2,18 +2,66 @@
 import Layout from "../layouts/Layout.astro";
 import Search from "../components/Search.astro";
 import Card from "../components/Card.astro";
-import search from "../lib/search";
 import RandXor from "../utils/randxor";
 
-import type { OrganizationCategory, OrganizationSearchResult } from "../types";
+import type { OrganizationCategory } from "../types";
+import { getOrganizations } from "../lib/organizations";
+import { imageUrl } from "../lib/envs";
 
 export const prerender = false;
 
 const query = Astro.url.searchParams.get("q") || "";
 const categories = Astro.url.searchParams.getAll("c[]") as OrganizationCategory[];
 const faves = Astro.url.searchParams.get("f");
+const searchResults = Astro.url.searchParams.get("results");
 
-const orgs = await search<OrganizationSearchResult[]>(query, categories, faves);
+const querySearchIds = searchResults
+  ? searchResults
+      .split(",")
+      .map((id) => Number(id))
+      .filter((id) => !isNaN(id))
+  : null;
+
+const favIds = (() => {
+     if (faves) {
+      console.log("[DEBUG] Processing favorites string of length:", faves.length);
+      const favoriteGroups: string[] = [];
+      for (let i = 0; i < faves.length; i++) {
+        const charCode = "0" <= faves[i] && faves[i] <= "9" ? parseInt(faves[i]) : faves.charCodeAt(i) - 97 + 10;
+
+        console.log(`[DEBUG] Processing char '${faves[i]}' at index ${i}, code: ${charCode}`);
+
+        const binary = charCode.toString(2).padStart(5, "0");
+        console.log(`[DEBUG] Binary representation: ${binary}`);
+
+        favoriteGroups.push(...[...binary].reverse());
+      }
+
+      console.log("[DEBUG] Favorite groups array length:", favoriteGroups.length);
+
+      const filteredIds: string[] = [];
+      for (let i = 0; i < favoriteGroups.length; i++) {
+        if (favoriteGroups[i] === "1") {
+          filteredIds.push(i.toString());
+        }
+      }
+
+      console.log("[DEBUG] Filtered IDs:", filteredIds);
+      return filteredIds;
+    } else {
+      console.log("[DEBUG] No favorites string provided");
+      return null;
+    }
+})()
+
+const allOrgs = await getOrganizations();
+
+const textFiltered = (query === "" || querySearchIds === null) ? allOrgs : allOrgs.filter((org) => querySearchIds.includes(org.id));
+const orgs = textFiltered.filter((org) => {
+  const matchesCategory = categories.length === 0 || categories.includes(org.attributes.type);
+    const matchesFaves = !favIds || favIds.includes(String(org.id));
+    return matchesCategory && matchesFaves;
+});
 
 if (query === "") {
   const today = new Date(Date.now() + (new Date().getTimezoneOffset() + 540) * 60 * 1000);
@@ -35,10 +83,13 @@ if (query === "") {
           orgs.map((org) => (
             <Card
               id={org.id}
-              name={org.name}
-              category={org.type}
-              short_description={org.short_description}
-              thumbnail={org.thumbnail}
+              name={org.attributes.name}
+              category={org.attributes.type}
+              short_description={org.attributes.short_description}
+              thumbnail={{
+                url: imageUrl(org.attributes.thumbnail.data.attributes.path),
+                ...org.attributes.thumbnail.data.attributes,
+              }}
             />
           ))
         ) : (
