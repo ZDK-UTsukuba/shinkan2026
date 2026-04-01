@@ -2,7 +2,7 @@ import { defineConfig, passthroughImageService } from "astro/config";
 import arraybuffer from "vite-plugin-arraybuffer";
 import icon from "astro-icon";
 import cloudflare from "@astrojs/cloudflare";
-import search from "./src/lib/search";
+import { getOrganizations } from "./src/lib/organizations";
 import { CATEGORY_LIST } from "./src/consts";
 import * as dotenv from "dotenv";
 import sitemap from "@astrojs/sitemap";
@@ -11,9 +11,10 @@ dotenv.config();
 const siteUrl = "https://shinkan-web.zdk.tsukuba.ac.jp";
 const count: Record<string, number> = {};
 try {
+  const orgs = await getOrganizations(process.env.STATIC_DATA_URL);
   for (const category of CATEGORY_LIST) {
     try {
-      const org = await search("", [category], null, process.env.MEILISEARCH_HOST, process.env.MEILISEARCH_API_KEY);
+      const org = orgs.filter((org) => org.attributes.type === category);
       count[category] = Array.isArray(org) ? org.length : 0;
     } catch (error) {
       console.warn(`カテゴリー「${category}」の取得中にエラーが発生しました:`, error);
@@ -62,10 +63,12 @@ export default defineConfig({
     },
     plugins: [arraybuffer()],
     define: {
-      "process.env.STRAPI_URL": JSON.stringify(process.env.STRAPI_URL),
-      "process.env.MEILISEARCH_HOST": JSON.stringify(process.env.MEILISEARCH_HOST),
-      "process.env.MEILISEARCH_API_KEY": JSON.stringify(process.env.MEILISEARCH_API_KEY),
       "process.env.CATEGORY_COUNTS": JSON.stringify(count),
+    },
+    build: {
+      rollupOptions: {
+        external: ["/pagefind/pagefind.js"],
+      },
     },
   },
 });
