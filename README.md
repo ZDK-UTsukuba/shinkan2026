@@ -1,8 +1,8 @@
-# shinkan2025
+# shinkan2026
 
 ## 概要
 
-筑波大学の公認学生団体等をまとめたサイト、「[新歓Web 2025](https://shinkan-web.zdk.tsukuba.ac.jp/)」のフロントエンドです。
+筑波大学の公認学生団体等をまとめたサイト、「[新歓Web 2026](https://shinkan-web.zdk.tsukuba.ac.jp/)」のフロントエンドです。
 
 ## 🚀 立ち上げ方
 
@@ -15,8 +15,8 @@
 1.  **リポジトリをクローン:**
 
     ```bash
-    git clone https://github.com/ZDK-UTsukuba/shinkan2025
-    cd shinkan2025
+    git clone https://github.com/ZDK-UTsukuba/shinkan2026
+    cd shinkan2026
     ```
 
 2.  **依存関係をインストール:**
@@ -39,9 +39,9 @@
     bun run build
     ```
 
-## ✨ 新歓Web 2025 開発者等一覧
+## ✨ 新歓Web 2026 開発者等一覧
 
-新歓Web 2025は[全学学類・専門学群・総合学域群代表者会議 情報処理推進特別委員会](https://www.stb.tsukuba.ac.jp/~zdk/ipc)の有志によって開発されています。
+新歓Web 2026は[全学学類・専門学群・総合学域群代表者会議 情報処理推進特別委員会](https://www.stb.tsukuba.ac.jp/~zdk/ipc)の有志によって開発されています。
 
 開発への参加をご希望の方は、本README記載の連絡先、またはGitHubのIssue・Pull Request機能を通じてお気軽にご連絡ください。
 
