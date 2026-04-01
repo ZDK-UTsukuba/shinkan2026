@@ -3,3 +3,8 @@
 
 # This flag is required for the Sentry Cloudflare SDK
 compatibility_flags = ["nodejs_compat"]
+
+main = "./dist/_worker.js"
+
+[assets]
+directory = "./dist"
