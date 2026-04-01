@@ -56,6 +56,11 @@ const favIds = (() => {
 
 const allOrgs = await getOrganizations();
 
+const fallbackShortDescription = (shortDescription: string, description: string) => {
+  if (shortDescription.trim() !== "") return shortDescription;
+  return description.replace(/\s+/g, " ").trim().slice(0, 50);
+};
+
 const textFiltered = (query === "" || querySearchIds === null) ? allOrgs : allOrgs.filter((org) => querySearchIds.includes(org.id));
 const orgs = textFiltered.filter((org) => {
   const matchesCategory = categories.length === 0 || categories.includes(org.attributes.type);
@@ -85,7 +90,10 @@ if (query === "") {
               id={org.id}
               name={org.attributes.name}
               category={org.attributes.type}
-              short_description={org.attributes.short_description}
+              short_description={fallbackShortDescription(
+                org.attributes.short_description,
+                org.attributes.description
+              )}
               thumbnail={{
                 url: imageUrl(org.attributes.thumbnail.data.attributes.path),
                 ...org.attributes.thumbnail.data.attributes,
