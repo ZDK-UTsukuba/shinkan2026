@@ -1,10 +1,11 @@
 import type { OpenGraphImage } from "./types";
 
-export const SITE_NAME = "筑波大学 新歓Web 2025";
-export const DEFAULT_SITE_DESCRIPTION = "筑波大学にあるサークル等公認学生団体の新歓情報をまとめたWebサイトです。サークル選びはここから始まる！";
+export const SITE_NAME = "筑波大学 新歓Web 2026";
+export const DEFAULT_SITE_DESCRIPTION =
+  "筑波大学にあるサークル等公認学生団体の新歓情報をまとめたWebサイトです。サークル選びはここから始まる！";
 export const DEFAULT_OG_IMAGE: OpenGraphImage = {
   src: "og-image.png",
-  alt: "筑波大学 新歓Web 2025",
+  alt: "筑波大学 新歓Web 2026",
 };
 
 export const CATEGORY_LIST = [
