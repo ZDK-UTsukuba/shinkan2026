@@ -68,7 +68,6 @@
 
 🌐 公式サイト: https://www.zdk.tsukuba.ac.jp/
 
-
 ## 🤖 備考
 
 本READMEは生成AIによって生成されました。

@@ -21,3 +21,4 @@ pnpm-debug.log*
 .DS_Store
 
 assets/FOT-TsukuARdGothicStd-B.otf
+.wrangler
