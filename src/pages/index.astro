@@ -61,7 +61,13 @@ const fallbackShortDescription = (shortDescription: string, description: string)
   return description.replace(/\s+/g, " ").trim().slice(0, 50);
 };
 
-const textFiltered = (query === "" || querySearchIds === null) ? allOrgs : allOrgs.filter((org) => querySearchIds.includes(org.id));
+const textFiltered =
+  query === "" || querySearchIds === null
+    ? allOrgs
+    : querySearchIds.flatMap((id) => {
+        const org = allOrgs.find((candidate) => candidate.id === id);
+        return org ? [org] : [];
+      });
 const orgs = textFiltered.filter((org) => {
   const matchesCategory = categories.length === 0 || categories.includes(org.attributes.type);
     const matchesFaves = !favIds || favIds.includes(String(org.id));
