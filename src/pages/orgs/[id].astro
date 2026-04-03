@@ -7,7 +7,6 @@ import { getOrganizations } from "../../lib/organizations";
 import { marked } from "marked";
 import { enumerateContactInfomations } from "../../utils/organization";
 import { processEmbeds } from "../../utils/embedProcessor";
-import type { Organization } from "../../types";
 
 import "@splidejs/splide/css";
 import "../../styles/md-content.css";
@@ -22,8 +21,12 @@ export async function getStaticPaths() {
   }));
 }
 
-type Props = Organization;
 const org = Astro.props;
+type DisplayImage = {
+  width: number;
+  height: number;
+  url: string;
+};
 
 // マークダウンをHTMLに変換
 let htmlContent = marked.parse(org.attributes.description, { breaks: true }) as string;
@@ -37,11 +40,30 @@ const description = processEmbeds(htmlContent);
 
 const contactInfo = enumerateContactInfomations(org);
 
-const images = org.attributes.images.data
+const detailedImages: DisplayImage[] = org.attributes.images.data
   .map((image) => {
     return { width: image.attributes.width, height: image.attributes.height, url: imageUrl(image.attributes.path) };
   })
   .filter((image) => image.width && image.height && image.url);
+
+const thumbnail = org.attributes.thumbnail.data;
+const thumbnailImage: DisplayImage[] =
+  thumbnail &&
+  thumbnail.attributes.width &&
+  thumbnail.attributes.height &&
+  thumbnail.attributes.path
+    ? [
+        {
+          width: thumbnail.attributes.width,
+          height: thumbnail.attributes.height,
+          url: imageUrl(thumbnail.attributes.path),
+        },
+      ]
+    : [];
+
+const displayImages = detailedImages.length > 0 ? detailedImages : thumbnailImage;
+const hasMultipleImages = displayImages.length > 1;
+const hasSingleImage = displayImages.length === 1;
 
 const tags = org.attributes.tags;
 const tagTexts = tags?.map((tag) => tag.display_string) ?? [];
@@ -65,50 +87,68 @@ const tagTexts = tags?.map((tag) => tag.display_string) ?? [];
       <h1 class="name" data-pagefind-weight="10">{org.attributes.name}</h1>
       <Heart id={org.id} />
     </div>
-    <section
-      id="main-carousel"
-      class="splide"
-      data-pagefind-ignore="all"
-      aria-label={`${org.attributes.name}の活動写真。メインのスライダー`}>
-      <div class="splide__track">
-        <ul class="splide__list">
-          {
-            images.map((image) => (
-              <li class="splide__slide">
-                <Image
-                  src={image.url}
-                  alt={`${org.attributes.name}の活動写真`}
-                  width={image.width}
-                  height={image.height}
-                />
-              </li>
-            ))
-          }
-        </ul>
-      </div>
-    </section>
-    <section
-      id="thumbnail-carousel"
-      class="splide"
-      data-pagefind-ignore="all"
-      aria-label={`サムネイルスライダー。各サムネイルをクリックすると、メインのスライダーが切り替わります`}>
-      <div class="splide__track">
-        <ul class="splide__list">
-          {
-            images.map((image) => (
-              <li class="splide__slide">
-                <Image
-                  src={image.url}
-                  alt={`${org.attributes.name}の活動写真`}
-                  width={image.width}
-                  height={image.height}
-                />
-              </li>
-            ))
-          }
-        </ul>
-      </div>
-    </section>
+    {
+      hasMultipleImages && (
+        <>
+          <section
+            id="main-carousel"
+            class="splide"
+            data-pagefind-ignore="all"
+            aria-label={`${org.attributes.name}の活動写真。メインのスライダー`}>
+            <div class="splide__track">
+              <ul class="splide__list">
+                {
+                  displayImages.map((image) => (
+                    <li class="splide__slide">
+                      <Image
+                        src={image.url}
+                        alt={`${org.attributes.name}の活動写真`}
+                        width={image.width}
+                        height={image.height}
+                      />
+                    </li>
+                  ))
+                }
+              </ul>
+            </div>
+          </section>
+          <section
+            id="thumbnail-carousel"
+            class="splide"
+            data-pagefind-ignore="all"
+            aria-label={`サムネイルスライダー。各サムネイルをクリックすると、メインのスライダーが切り替わります`}>
+            <div class="splide__track">
+              <ul class="splide__list">
+                {
+                  displayImages.map((image) => (
+                    <li class="splide__slide">
+                      <Image
+                        src={image.url}
+                        alt={`${org.attributes.name}の活動写真`}
+                        width={image.width}
+                        height={image.height}
+                      />
+                    </li>
+                  ))
+                }
+              </ul>
+            </div>
+          </section>
+        </>
+      )
+    }
+    {
+      hasSingleImage && (
+        <section class="single-image" data-pagefind-ignore="all" aria-label={`${org.attributes.name}の活動写真`}>
+          <Image
+            src={displayImages[0].url}
+            alt={`${org.attributes.name}の活動写真`}
+            width={displayImages[0].width}
+            height={displayImages[0].height}
+          />
+        </section>
+      )
+    }
     <section class="description md-content" data-pagefind-weight="2" set:html={description} />
     <span class="separator"></span>
     <section class="activity_date">
@@ -284,10 +324,14 @@ const tagTexts = tags?.map((tag) => tag.display_string) ?? [];
   #main-carousel {
     padding-block: 1rem;
   }
-  #main-carousel .splide__slide img {
+  #main-carousel .splide__slide img,
+  .single-image img {
     width: 100%;
     height: 100%;
     object-fit: contain;
+  }
+  .single-image {
+    padding-block: 1rem;
   }
   #thumbnail-carousel {
     padding-block-end: 1rem;
@@ -321,31 +365,36 @@ const tagTexts = tags?.map((tag) => tag.display_string) ?? [];
 <script>
   import Splide from "@splidejs/splide";
 
-  const main = new Splide("#main-carousel", {
-    type: "fade",
-    heightRatio: 9 / 16,
-    rewind: true,
-    pagination: false,
-    arrows: true,
-  });
+  const mainCarousel = document.querySelector<HTMLElement>("#main-carousel");
+  const thumbnailCarousel = document.querySelector<HTMLElement>("#thumbnail-carousel");
 
-  const thumbnails = new Splide("#thumbnail-carousel", {
-    fixedWidth: 100,
-    fixedHeight: 60,
-    perPage: 4,
-    gap: 10,
-    rewind: true,
-    pagination: false,
-    isNavigation: true,
-    arrows: false,
-    breakpoints: {
-      600: {
-        fixedWidth: 60,
-        fixedHeight: 44,
+  if (mainCarousel && thumbnailCarousel) {
+    const main = new Splide(mainCarousel, {
+      type: "fade",
+      heightRatio: 9 / 16,
+      rewind: true,
+      pagination: false,
+      arrows: true,
+    });
+
+    const thumbnails = new Splide(thumbnailCarousel, {
+      fixedWidth: 100,
+      fixedHeight: 60,
+      perPage: 4,
+      gap: 10,
+      rewind: true,
+      pagination: false,
+      isNavigation: true,
+      arrows: false,
+      breakpoints: {
+        600: {
+          fixedWidth: 60,
+          fixedHeight: 44,
+        },
       },
-    },
-  });
-  main.sync(thumbnails);
-  main.mount();
-  thumbnails.mount();
+    });
+    main.sync(thumbnails);
+    main.mount();
+    thumbnails.mount();
+  }
 </script>
