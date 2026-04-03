@@ -9,6 +9,8 @@ import sitemap from "@astrojs/sitemap";
 dotenv.config();
 // const siteUrl = process.env.CF_PAGES_URL ?? "https://shinkan-web.zdk.tsukuba.ac.jp";
 const siteUrl = "https://shinkan-web.zdk.tsukuba.ac.jp";
+
+const redirects: Record<string, string> = {};
 const count: Record<string, number> = {};
 try {
   const orgs = await getOrganizations(process.env.STATIC_DATA_URL);
@@ -19,6 +21,12 @@ try {
     } catch (error) {
       console.warn(`カテゴリー「${category}」の取得中にエラーが発生しました:`, error);
       count[category] = 0;
+    }
+  }
+    
+  for (const org of orgs) {
+    if (org.old_id) {
+      redirects[ `/orgs/${org.old_id}` ] = `/orgs/${org.id}`;
     }
   }
 } catch (error) {
@@ -70,5 +78,6 @@ export default defineConfig({
         external: ["/pagefind/pagefind.js"],
       },
     },
-  },
+    },
+    redirects: redirects,
 });
