@@ -36,7 +36,7 @@ const counts: any = process.env.CATEGORY_COUNTS ?? [];
       ))
     }
     <label for="faves">
-      <input type="checkbox" id="faves" name="f" value="0" checked={faves} />
+      <input type="checkbox" id="faves" name="f" value="1" checked={Boolean(faves)} />
       <span id="faves-label">お気に入り</span>
     </label>
   </fieldset>
@@ -138,8 +138,21 @@ const counts: any = process.env.CATEGORY_COUNTS ?? [];
 
 <script>
   import { buildSearchAliases, normalizeSearchText } from "../utils/search";
+  import { loadFavoriteGroups } from "../lib/fav";
 
   const search = document.querySelector(".search")! as HTMLFormElement;
+  const text = search.querySelector('.keyword input[type="text"]')! as HTMLInputElement;
+  const categoryInputs = [...search.querySelectorAll('input[name="c[]"]')] as HTMLInputElement[];
+  const favoriteCheckbox = search.querySelector("#faves")! as HTMLInputElement;
+  const label = search.querySelector("#faves-label")!;
+  const grid = document.querySelector("[data-org-grid]")! as HTMLElement;
+  const loading = document.querySelector("[data-search-loading]")! as HTMLElement;
+  const emptyState = document.querySelector("[data-search-empty]")! as HTMLElement;
+  const cards = [...grid.querySelectorAll("[data-org-card]")] as HTMLElement[];
+  const originalOrderIds = cards.map((card) => card.dataset.orgId!).filter(Boolean);
+  const cardMap = new Map(cards.map((card) => [card.dataset.orgId!, card]));
+  const isInitialPending = grid.dataset.initialSearchPending === "true";
+
   const observer = new IntersectionObserver((entries) => {
     for (const entry of entries) {
       if (entry.isIntersecting) {
@@ -152,34 +165,13 @@ const counts: any = process.env.CATEGORY_COUNTS ?? [];
 
   observer.observe(document.querySelector(".search .limit")!);
 
-  // TODO: change this algorithm based on the search system
-  const favoriteGroupCount = (() => {
-    let ret = 0;
-    if (typeof localStorage !== "undefined") {
-      const val = localStorage.getItem("favoriteGroups");
-      if (val) {
-        for (let i = 0; i < val.length; i++) {
-          ret += [
-            ...("0" <= val[i] && val[i] <= "9" ? parseInt(val[i]) : val.charCodeAt(i) - 97 + 10).toString(2),
-          ].filter((x) => x === "1").length;
-        }
-      }
-    }
-    return ret;
-  })();
+  const getFavoriteIds = () => loadFavoriteGroups();
 
-  const label = document.querySelector("#faves-label")!;
-  label.textContent = `お気に入り (${favoriteGroupCount})`;
+  const updateFavoriteLabel = () => {
+    label.textContent = `お気に入り (${getFavoriteIds().size})`;
+  };
 
-  if (typeof localStorage !== "undefined") {
-    const val = localStorage.getItem("favoriteGroups");
-    if (val) {
-      const checkbox = document.querySelector("#faves")!;
-      checkbox.setAttribute("value", val);
-    }
-  }
-
-  const text = document.querySelector('.keyword input[type="text"]')! as HTMLInputElement;
+  updateFavoriteLabel();
 
   // @ts-ignore
   const pagefind = await import("/pagefind/pagefind.js");
@@ -213,17 +205,24 @@ const counts: any = process.env.CATEGORY_COUNTS ?? [];
     }, 0);
   };
 
-  text.addEventListener("input", () => {
-    const aliases = buildSearchAliases(text.value);
-    if (aliases.length > 0) {
-      aliases.forEach((alias) => pagefind.preload(alias));
-    }
-  });
+  let lastSearchQuery = "";
+  let lastSearchIds: string[] | null = null;
+  let latestSearchToken = 0;
+  let latestApplyToken = 0;
+  let debounceTimer: number | undefined;
 
-  const searchOrgs = async () => {
-    const query = text.value;
+  const getSearchResultIds = async (query: string, forceRefresh = false) => {
+    if (!forceRefresh && query === lastSearchQuery && lastSearchIds !== null) {
+      return lastSearchIds;
+    }
+
+    const token = ++latestSearchToken;
     const aliases = buildSearchAliases(query);
-    if (aliases.length === 0) return [];
+    if (aliases.length === 0) {
+      lastSearchQuery = query;
+      lastSearchIds = [];
+      return [];
+    }
 
     const searches = await Promise.all(
       aliases.map(async (alias, aliasIndex) => {
@@ -269,16 +268,140 @@ const counts: any = process.env.CATEGORY_COUNTS ?? [];
       })
       .filter((id) => id !== null)
       .filter((id, index, ids) => ids.indexOf(id) === index);
+
+    if (token !== latestSearchToken) {
+      return null;
+    }
+
+    lastSearchQuery = query;
+    lastSearchIds = ids;
     return ids;
   };
 
+  const getSelectedCategories = () => categoryInputs.filter((input) => input.checked).map((input) => input.value);
+
+  const updateUrl = () => {
+    const query = text.value.trim();
+    const selectedCategories = getSelectedCategories();
+    const url = new URL(window.location.href);
+
+    url.searchParams.delete("q");
+    url.searchParams.delete("c[]");
+    url.searchParams.delete("f");
+
+    if (query !== "") {
+      url.searchParams.set("q", query);
+    }
+
+    if (selectedCategories.length === 0) {
+      url.searchParams.append("c[]", "");
+    } else if (selectedCategories.length < categoryInputs.length) {
+      for (const category of selectedCategories) {
+        url.searchParams.append("c[]", category);
+      }
+    }
+
+    if (favoriteCheckbox.checked) {
+      url.searchParams.set("f", "1");
+    }
+
+    const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+    window.history.replaceState({}, "", nextUrl);
+  };
+
+  const applyFilters = async (forceSearch = false) => {
+    const applyToken = ++latestApplyToken;
+    const query = text.value.trim();
+    const selectedCategories = new Set(getSelectedCategories());
+    const favoriteIds = favoriteCheckbox.checked ? getFavoriteIds() : null;
+
+    updateFavoriteLabel();
+    updateUrl();
+
+    let orderedIds = originalOrderIds;
+    if (query !== "") {
+      const ids = await getSearchResultIds(query, forceSearch);
+      if (applyToken !== latestApplyToken || ids === null) {
+        return;
+      }
+      orderedIds = ids;
+    }
+
+    const visibleIds = orderedIds.filter((id) => {
+      const card = cardMap.get(id);
+      if (!card) return false;
+
+      const category = card.dataset.orgCategory ?? "";
+      const matchesCategory = selectedCategories.has(category);
+      const matchesFavorite = favoriteIds ? favoriteIds.has(id) : true;
+
+      return matchesCategory && matchesFavorite;
+    });
+
+    const visibleIdSet = new Set(visibleIds);
+    const orderedCards = visibleIds
+      .map((id) => cardMap.get(id))
+      .filter((card): card is HTMLElement => card !== undefined);
+    const hiddenCards = originalOrderIds
+      .filter((id) => !visibleIdSet.has(id))
+      .map((id) => cardMap.get(id))
+      .filter((card): card is HTMLElement => card !== undefined);
+
+    for (const card of [...orderedCards, ...hiddenCards]) {
+      card.hidden = !visibleIdSet.has(card.dataset.orgId!);
+      grid.appendChild(card);
+    }
+
+    if (isInitialPending) {
+      grid.hidden = false;
+      grid.removeAttribute("data-initial-search-pending");
+      loading.hidden = true;
+    }
+
+    emptyState.hidden = visibleIds.length !== 0;
+  };
+
+  const debounceApplyFilters = () => {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+
+    debounceTimer = window.setTimeout(() => {
+      applyFilters();
+    }, 200);
+  };
+
+  text.addEventListener("input", () => {
+    const query = text.value.trim();
+    if (query.length > 0) {
+      buildSearchAliases(query).forEach((alias) => pagefind.preload(alias));
+    } else {
+      lastSearchQuery = "";
+      lastSearchIds = null;
+    }
+
+    debounceApplyFilters();
+  });
+
+  for (const input of categoryInputs) {
+    input.addEventListener("change", () => {
+      applyFilters();
+    });
+  }
+
+  favoriteCheckbox.addEventListener("change", () => {
+    applyFilters();
+  });
+
   search.addEventListener("submit", (e) => {
     e.preventDefault();
-    searchOrgs().then((ids) => {
-      const formData = new FormData(search);
-      formData.append("results", ids.join(","));
-      const params = new URLSearchParams(formData as any).toString();
-      window.location.href = `/?${params}`;
-    });
+    applyFilters(true);
   });
+
+  window.addEventListener("favoritegroupschange", () => {
+    updateFavoriteLabel();
+    applyFilters();
+  });
+
+  applyFilters();
 </script>
