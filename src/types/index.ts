@@ -43,7 +43,7 @@ interface Tag {
 }
 
 export interface Organization {
-  id: number;
+  id: string;
   attributes: {
     name: string;
     type: OrganizationCategory;

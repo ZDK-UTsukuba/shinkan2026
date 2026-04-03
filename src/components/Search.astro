@@ -137,6 +137,8 @@ const counts: any = process.env.CATEGORY_COUNTS ?? [];
 </style>
 
 <script>
+  import { loadFavoriteGroups } from "../lib/fav";
+
   const search = document.querySelector(".search")! as HTMLFormElement;
   const text = search.querySelector('.keyword input[type="text"]')! as HTMLInputElement;
   const categoryInputs = [...search.querySelectorAll('input[name="c[]"]')] as HTMLInputElement[];
@@ -162,27 +164,7 @@ const counts: any = process.env.CATEGORY_COUNTS ?? [];
 
   observer.observe(document.querySelector(".search .limit")!);
 
-  const decodeFavoriteGroupIds = (value: string | null) => {
-    const ids = new Set<string>();
-    if (!value) return ids;
-
-    let currentId = 0;
-    for (let i = 0; i < value.length; i++) {
-      const numericValue = "0" <= value[i] && value[i] <= "9" ? parseInt(value[i]) : value.charCodeAt(i) - 97 + 10;
-      const binary = numericValue.toString(2).padStart(5, "0");
-      for (const bit of [...binary].reverse()) {
-        if (bit === "1") {
-          ids.add(String(currentId));
-        }
-        currentId += 1;
-      }
-    }
-
-    return ids;
-  };
-
-  const getFavoriteIds = () =>
-    typeof localStorage === "undefined" ? new Set<string>() : decodeFavoriteGroupIds(localStorage.getItem("favoriteGroups"));
+  const getFavoriteIds = () => loadFavoriteGroups();
 
   const updateFavoriteLabel = () => {
     label.textContent = `お気に入り (${getFavoriteIds().size})`;
