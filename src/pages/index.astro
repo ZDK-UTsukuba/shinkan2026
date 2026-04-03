@@ -3,27 +3,17 @@ import Layout from "../layouts/Layout.astro";
 import Search from "../components/Search.astro";
 import Card from "../components/Card.astro";
 import RandXor from "../utils/randxor";
+import { CATEGORY_LIST } from "../consts";
 
 import type { OrganizationCategory } from "../types";
 import { getOrganizations } from "../lib/organizations";
 import { imageUrl } from "../lib/envs";
-import { decodeFavoriteGroups } from "../lib/fav";
 
 export const prerender = false;
 
 const query = Astro.url.searchParams.get("q") || "";
 const categories = Astro.url.searchParams.getAll("c[]") as OrganizationCategory[];
 const faves = Astro.url.searchParams.get("f");
-const searchResults = Astro.url.searchParams.get("results");
-
-const querySearchIds = searchResults ? searchResults.split(",").filter((id) => id.length > 0) : null;
-
-const favIds = (() => {
-  if (faves) {
-    return decodeFavoriteGroups(faves);
-  }
-  return null;
-})();
 
 const allOrgs = await getOrganizations();
 
@@ -32,14 +22,34 @@ const fallbackShortDescription = (shortDescription: string, description: string)
   return description.replace(/\s+/g, " ").trim().slice(0, 50);
 };
 
-const textFiltered =
-  query === "" || querySearchIds === null ? allOrgs : allOrgs.filter((org) => querySearchIds.includes(org.id));
+const normalizeSearchText = (value: string) => value.normalize("NFKC").toLowerCase().replace(/\s+/g, "");
 
-const orgs = textFiltered.filter((org) => {
-  const matchesCategory = categories.length === 0 || categories.includes(org.attributes.type);
-  const matchesFaves = !favIds || favIds.has(org.id);
-  return matchesCategory && matchesFaves;
-});
+const matchesInitialQuery = (queryText: string, org: (typeof allOrgs)[number]) => {
+  const normalizedQuery = normalizeSearchText(queryText);
+  if (normalizedQuery === "") return true;
+
+  const haystacks = [
+    org.attributes.name,
+    org.attributes.name_kana,
+    org.attributes.short_description,
+    org.attributes.description,
+    ...org.attributes.tags.map((tag) => tag.display_string),
+  ].map(normalizeSearchText);
+
+  return haystacks.some((value) => value.includes(normalizedQuery));
+};
+
+const orgs = [...allOrgs];
+const initialVisibleIds = new Set(
+  orgs
+    .filter((org) => {
+      const matchesCategory = categories.length === 0 || categories.includes(org.attributes.type);
+      return matchesCategory && matchesInitialQuery(query, org);
+    })
+    .map((org) => String(org.id))
+);
+const hasInitialClientSearch =
+  query !== "" || Boolean(faves) || (categories.length > 0 && categories.length < CATEGORY_LIST.length);
 
 if (query === "") {
   const today = new Date(Date.now() + (new Date().getTimezoneOffset() + 540) * 60 * 1000);
@@ -55,39 +65,51 @@ if (query === "") {
 <Layout>
   <Search text={query} categories={categories} faves={faves} />
   <div class="container">
-    <section class:list={[{ notfound: orgs.length === 0 }]}>
-      {
-        orgs.length > 0 ? (
-          orgs.map((org) => (
-            <Card
-              id={org.id}
-              name={org.attributes.name}
-              category={org.attributes.type}
-              short_description={fallbackShortDescription(org.attributes.short_description, org.attributes.description)}
-              thumbnail={{
-                url: imageUrl(org.attributes.thumbnail.data.attributes.path),
-                ...org.attributes.thumbnail.data.attributes,
-              }}
-            />
-          ))
-        ) : (
-          <p>該当する団体が見つかりませんでした</p>
-        )
-      }
+    <p class="loading" data-search-loading hidden={!hasInitialClientSearch}>検索結果を読み込み中...</p>
+    <p class="notfound" data-search-empty hidden>該当する団体が見つかりませんでした</p>
+    <section data-org-grid hidden={hasInitialClientSearch} data-initial-search-pending={hasInitialClientSearch}>
+      {orgs.map((org) => (
+        <Card
+          id={org.id}
+          name={org.attributes.name}
+          category={org.attributes.type}
+          hidden={!initialVisibleIds.has(String(org.id))}
+          short_description={fallbackShortDescription(org.attributes.short_description, org.attributes.description)}
+          thumbnail={{
+            url: imageUrl(org.attributes.thumbnail.data.attributes.path),
+            ...org.attributes.thumbnail.data.attributes,
+          }}
+        />
+      ))}
     </section>
   </div>
 </Layout>
 
 <style>
-  section:not(.notfound) {
+  section {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 1rem;
+  }
+  section[hidden] {
+    display: none;
   }
   .notfound {
     display: flex;
     justify-content: center;
     margin-block-start: 3rem;
     opacity: 0.8;
+  }
+  .loading {
+    display: flex;
+    justify-content: center;
+    margin-block-start: 3rem;
+    opacity: 0.8;
+  }
+  .notfound[hidden] {
+    display: none;
+  }
+  .loading[hidden] {
+    display: none;
   }
 </style>
