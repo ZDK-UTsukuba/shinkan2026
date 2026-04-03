@@ -233,7 +233,7 @@ const counts: any = process.env.CATEGORY_COUNTS ?? [];
     const ids = rankedOrgs
       .map<string>((org) => org.url)
       .flatMap((url) => {
-        const match = url.match(/orgs\/(\d+)/);
+        const match = url.match(/orgs\/([^/]+)/);
         return match ? match[1] : null;
       })
       .filter((id) => id !== null)
