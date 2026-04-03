@@ -10,3 +10,6 @@ compatibility_date = "2026-04-01"
 
 [assets]
 directory = "./dist"
+
+[vars]
+STATIC_DATA_URL="https://r2.shinkan2026.tsukuba.dev"
