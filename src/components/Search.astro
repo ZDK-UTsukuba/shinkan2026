@@ -181,7 +181,33 @@ const counts: any = process.env.CATEGORY_COUNTS ?? [];
 
   // @ts-ignore
   const pagefind = await import("/pagefind/pagefind.js");
+  await pagefind.options({
+    ranking: {
+      termSimilarity: 2,
+    },
+  });
   await pagefind.init();
+
+  const normalizeSearchText = (value: string) => value.normalize("NFKC").toLowerCase().replace(/\s+/g, "");
+
+  const scoreOrgResult = (org: any, query: string) => {
+    const normalizedQuery = normalizeSearchText(query);
+    if (normalizedQuery.length === 0) return 0;
+
+    const title = normalizeSearchText(org.meta?.title ?? "");
+    const keywords = normalizeSearchText(org.meta?.keywords ?? "");
+    const kana = normalizeSearchText(org.meta?.kana ?? "");
+
+    let score = 0;
+
+    if (title === normalizedQuery) score += 300;
+    if (title.startsWith(normalizedQuery)) score += 180;
+    if (title.includes(normalizedQuery)) score += 120;
+    if (keywords.includes(normalizedQuery)) score += 80;
+    if (kana.includes(normalizedQuery)) score += 60;
+
+    return score;
+  };
 
   text.addEventListener("input", () => {
     const query = text.value;
@@ -195,13 +221,23 @@ const counts: any = process.env.CATEGORY_COUNTS ?? [];
     const searchResults = await pagefind.search(query);
     const orgs = await Promise.all(searchResults.results.map((r: any) => r.data()));
 
-    const ids = orgs
+    const rankedOrgs = orgs
+      .map((org, index) => ({
+        org,
+        index,
+        score: scoreOrgResult(org, query),
+      }))
+      .sort((a, b) => b.score - a.score || a.index - b.index)
+      .map(({ org }) => org);
+
+    const ids = rankedOrgs
       .map<string>((org) => org.url)
       .flatMap((url) => {
-        const match = url.match(/orgs\/(\d+)/);
+        const match = url.match(/orgs\/([^/]+)/);
         return match ? match[1] : null;
       })
-      .filter((id) => id !== null);
+      .filter((id) => id !== null)
+      .filter((id, index, ids) => ids.indexOf(id) === index);
     return ids;
   };
 

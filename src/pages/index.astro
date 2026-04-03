@@ -15,12 +15,7 @@ const categories = Astro.url.searchParams.getAll("c[]") as OrganizationCategory[
 const faves = Astro.url.searchParams.get("f");
 const searchResults = Astro.url.searchParams.get("results");
 
-const querySearchIds = searchResults
-  ? searchResults
-      .split(",")
-      .map((id) => Number(id))
-      .filter((id) => !isNaN(id))
-  : null;
+const querySearchIds = searchResults ? searchResults.split(",").filter((id) => id.length > 0) : null;
 
 const favIds = (() => {
      if (faves) {
@@ -61,7 +56,13 @@ const fallbackShortDescription = (shortDescription: string, description: string)
   return description.replace(/\s+/g, " ").trim().slice(0, 50);
 };
 
-const textFiltered = (query === "" || querySearchIds === null) ? allOrgs : allOrgs.filter((org) => querySearchIds.includes(org.id));
+const textFiltered =
+  query === "" || querySearchIds === null
+    ? allOrgs
+    : querySearchIds.flatMap((id) => {
+        const org = allOrgs.find((candidate) => String(candidate.id) === id);
+        return org ? [org] : [];
+      });
 const orgs = textFiltered.filter((org) => {
   const matchesCategory = categories.length === 0 || categories.includes(org.attributes.type);
     const matchesFaves = !favIds || favIds.includes(String(org.id));

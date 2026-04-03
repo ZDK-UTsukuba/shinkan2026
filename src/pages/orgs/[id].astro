@@ -44,6 +44,7 @@ const images = org.attributes.images.data
   .filter((image) => image.width && image.height && image.url);
 
 const tags = org.attributes.tags;
+const tagTexts = tags?.map((tag) => tag.display_string) ?? [];
 ---
 
 <Layout
@@ -52,14 +53,23 @@ const tags = org.attributes.tags;
   ogImage={{ src: `/og/${org.id}.png`, alt: `${org.attributes.name} - 筑波大学 新歓Web 2026` }}>
   <article
     class="container"
+    data-pagefind-body
     data-pagefind-filter={`id[data-org-id], category:${org.attributes.type}`}
     data-org-id={org.id}>
-    <a href="/" class="back">一覧へ戻る</a>
+    <div class="pagefind-meta" data-pagefind-ignore>
+      <span data-pagefind-meta="kana">{org.attributes.name_kana}</span>
+      <span data-pagefind-meta="keywords">{tagTexts.join(" ")}</span>
+    </div>
+    <a href="/" class="back" data-pagefind-ignore="all">一覧へ戻る</a>
     <div class="title-line">
-      <h1 class="name">{org.attributes.name}</h1>
+      <h1 class="name" data-pagefind-weight="10">{org.attributes.name}</h1>
       <Heart id={org.id} />
     </div>
-    <section id="main-carousel" class="splide" aria-label={`${org.attributes.name}の活動写真。メインのスライダー`}>
+    <section
+      id="main-carousel"
+      class="splide"
+      data-pagefind-ignore="all"
+      aria-label={`${org.attributes.name}の活動写真。メインのスライダー`}>
       <div class="splide__track">
         <ul class="splide__list">
           {
@@ -80,6 +90,7 @@ const tags = org.attributes.tags;
     <section
       id="thumbnail-carousel"
       class="splide"
+      data-pagefind-ignore="all"
       aria-label={`サムネイルスライダー。各サムネイルをクリックすると、メインのスライダーが切り替わります`}>
       <div class="splide__track">
         <ul class="splide__list">
@@ -98,7 +109,7 @@ const tags = org.attributes.tags;
         </ul>
       </div>
     </section>
-    <section class="description md-content" set:html={description} />
+    <section class="description md-content" data-pagefind-weight="2" set:html={description} />
     <span class="separator"></span>
     <section class="activity_date">
       <h2>活動時間</h2>
@@ -108,7 +119,7 @@ const tags = org.attributes.tags;
       <h2>活動場所</h2>
       <p>{org.attributes.activity_location}</p>
     </section>
-    <section class="contacts">
+    <section class="contacts" data-pagefind-ignore>
       <h2>連絡先・SNS等</h2>
       <address>
         <dl>
@@ -131,7 +142,7 @@ const tags = org.attributes.tags;
         </dl>
       </address>
     </section>
-    <section class="keywords">
+    <section class="keywords" data-pagefind-weight="8">
       <h2>キーワード</h2>
       <ul>
         {
@@ -153,6 +164,17 @@ const tags = org.attributes.tags;
     font-size: 1rem;
     opacity: 0.6;
     margin-block-end: 1rem;
+  }
+  .pagefind-meta {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
   .back::before {
     content: "← ";
