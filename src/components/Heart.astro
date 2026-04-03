@@ -144,9 +144,9 @@ const { id } = Astro.props;
 </style>
 
 <script>
+  const FAVORITE_GROUPS_EVENT = "favoritegroupschange";
   const hearts = document.querySelectorAll(".heart")!;
   const label = document.querySelector("#faves-label");
-  const checkbox = document.querySelector("#faves");
 
   let favoriteGroups = ((): string[] => {
     if (typeof localStorage !== "undefined") {
@@ -228,7 +228,7 @@ const { id } = Astro.props;
       }
 
       // TODO: change this algorithm based on the search system
-      if (label && checkbox) {
+      if (label) {
         const favoriteGroupCount = (() => {
           const textContent = label.textContent;
           if (!textContent || (textContent && textContent.length <= 5)) {
@@ -249,8 +249,17 @@ const { id } = Astro.props;
           }
         })();
         label.textContent = `お気に入り (${favoriteGroupCount})`;
-        checkbox.setAttribute("value", encodeFavoriteGroups(favoriteGroups));
       }
+
+      window.dispatchEvent(
+        new CustomEvent(FAVORITE_GROUPS_EVENT, {
+          detail: {
+            groupId,
+            pressed: status === null || status === "false",
+            encoded: encodeFavoriteGroups(favoriteGroups),
+          },
+        })
+      );
     });
   }
 </script>
