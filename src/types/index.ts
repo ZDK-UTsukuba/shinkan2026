@@ -44,6 +44,7 @@ interface Tag {
 
 export interface Organization {
   id: string;
+  old_id: number | null;
   attributes: {
     name: string;
     type: OrganizationCategory;
