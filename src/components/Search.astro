@@ -137,6 +137,8 @@ const counts: any = process.env.CATEGORY_COUNTS ?? [];
 </style>
 
 <script>
+  import { loadFavoriteGroups } from "../lib/fav";
+
   const search = document.querySelector(".search")! as HTMLFormElement;
   const observer = new IntersectionObserver((entries) => {
     for (const entry of entries) {
@@ -150,21 +152,7 @@ const counts: any = process.env.CATEGORY_COUNTS ?? [];
 
   observer.observe(document.querySelector(".search .limit")!);
 
-  // TODO: change this algorithm based on the search system
-  const favoriteGroupCount = (() => {
-    let ret = 0;
-    if (typeof localStorage !== "undefined") {
-      const val = localStorage.getItem("favoriteGroups");
-      if (val) {
-        for (let i = 0; i < val.length; i++) {
-          ret += [
-            ...("0" <= val[i] && val[i] <= "9" ? parseInt(val[i]) : val.charCodeAt(i) - 97 + 10).toString(2),
-          ].filter((x) => x === "1").length;
-        }
-      }
-    }
-    return ret;
-  })();
+  const favoriteGroupCount = loadFavoriteGroups().size;
 
   const label = document.querySelector("#faves-label")!;
   label.textContent = `お気に入り (${favoriteGroupCount})`;
