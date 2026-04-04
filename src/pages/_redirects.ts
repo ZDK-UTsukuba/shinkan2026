@@ -1,5 +1,4 @@
-import { getOrganizations } from "./src/utils/api.ts";
-
+import { getOrganizations } from '../lib/organizations';
 
 const redirects: Record<string, string> = {};
 const orgs = await getOrganizations();
