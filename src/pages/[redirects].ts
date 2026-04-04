@@ -13,6 +13,13 @@ const fileContent = Object.entries(redirects)
     .map(([oldPath, newPath]) => `${oldPath} ${newPath} 301`)
     .join("\n");
 
+export async function getStaticPaths() {
+
+    return [
+        { params: { redirects: "_redirects" } },
+    ];
+}
+
 export async function GET() {
     return new Response(fileContent);
 }
