@@ -5,9 +5,10 @@ const timetableCollection = defineCollection({
   schema: z.array(
     z.object({
       title: z.string(),
-      id: z.number().nullable(),
+      orgPageId: z.string().nullable(),
       startsAt: z.string().time(),
       endsAt: z.string().time(),
+      credits: z.array(z.string()).optional(),
     })
   ),
 });
