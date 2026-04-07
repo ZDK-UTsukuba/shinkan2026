@@ -11,11 +11,12 @@ const { program, startTime, column } = Astro.props;
 
 const [sh, sm] = program.startsAt.split(":").map(Number);
 const [eh, em] = program.endsAt.split(":").map(Number);
-const startsAt = (sh - startTime) * 6 + Math.round(sm / 10);
-const endsAt = (eh - startTime) * 6 + Math.round(em / 10);
+const rowsPerHour = 12;
+const startsAt = (sh - startTime) * rowsPerHour + Math.floor(sm / 5);
+const endsAt = (eh - startTime) * rowsPerHour + Math.floor(em / 5);
 
-const Element = program.id ? "a" : "div";
-const href = program.id ? `https://shinkan-web.zdk.tsukuba.ac.jp/orgs/${program.id}` : null;
+const Element = program.orgPageId ? "a" : "div";
+const href = program.orgPageId ? `/orgs/${program.orgPageId}` : null;
 ---
 
 <Element class="program" style={{ gridArea: `${2 + startsAt}/${column}/${2 + endsAt}/${column}` }} href={href}>
@@ -29,6 +30,13 @@ const href = program.id ? `https://shinkan-web.zdk.tsukuba.ac.jp/orgs/${program.
       {eh}:{String(em).padStart(2, "0")}
     </time>
   </span>
+  {
+    program.credits?.length ? (
+      <span class="credits">
+        {program.credits.map((credit) => <span>{credit}</span>)}
+      </span>
+    ) : null
+  }
 </Element>
 
 <style>
@@ -39,7 +47,7 @@ const href = program.id ? `https://shinkan-web.zdk.tsukuba.ac.jp/orgs/${program.
     color: #fff;
     width: calc(100% - 40px);
     font-size: 0.85em;
-    line-height: 1;
+    line-height: 1.15;
     border: 1px solid var(--accent);
     background: var(--accent-bright);
     padding: 4px;
@@ -53,6 +61,13 @@ const href = program.id ? `https://shinkan-web.zdk.tsukuba.ac.jp/orgs/${program.
   .program .time {
     font-size: 0.7em;
     opacity: 0.6;
+  }
+  .program .credits {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    font-size: 0.72em;
+    opacity: 0.9;
   }
 
   @media screen and (max-width: 910px) {

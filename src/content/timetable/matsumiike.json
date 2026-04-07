@@ -1,0 +1,120 @@
+[
+  {
+    "title": "軽音団体合同ライブ",
+    "orgPageId": null,
+    "startsAt": "10:00:00",
+    "endsAt": "12:30:00",
+    "credits": [
+      "TOJO K-ON",
+      "E.L.L. (筑波軽音楽協会)",
+      "筑波音楽協会",
+      "つくばフォーク村",
+      "バンドストッククラブ PBCM"
+    ]
+  },
+  {
+    "title": "少林寺拳法",
+    "orgPageId": null,
+    "startsAt": "12:30:00",
+    "endsAt": "12:50:00",
+    "credits": ["少林寺拳法部"]
+  },
+  {
+    "title": "ダブルダッチパフォーマンス",
+    "orgPageId": "08004",
+    "startsAt": "12:50:00",
+    "endsAt": "13:10:00",
+    "credits": ["ダブルダッチサークル purplume"]
+  },
+  {
+    "title": "アンプラグド新歓祭ライブ",
+    "orgPageId": "08007",
+    "startsAt": "13:10:00",
+    "endsAt": "13:30:00",
+    "credits": ["弾き語りクラブ アンプラグド"]
+  },
+  {
+    "title": "TMP 松見池 DJ Performance",
+    "orgPageId": "05147",
+    "startsAt": "13:45:00",
+    "endsAt": "14:05:00",
+    "credits": ["TMP(つくばミュージックプロジェクト)"]
+  },
+  {
+    "title": "合気道部",
+    "orgPageId": "02002",
+    "startsAt": "14:05:00",
+    "endsAt": "14:25:00",
+    "credits": ["合気道部"]
+  },
+  {
+    "title": "愛のリコーダー",
+    "orgPageId": "03028",
+    "startsAt": "14:25:00",
+    "endsAt": "14:45:00",
+    "credits": ["ブロックフレーテ同好会"]
+  },
+  {
+    "title": "男声合唱団メンネルコール",
+    "orgPageId": "03034",
+    "startsAt": "14:45:00",
+    "endsAt": "15:05:00",
+    "credits": ["男声合唱団メンネルコール"]
+  },
+  {
+    "title": "The Humors of T-Celt",
+    "orgPageId": "08022",
+    "startsAt": "15:05:00",
+    "endsAt": "15:25:00",
+    "credits": ["筑波大学ケルト音楽愛好会 T-Celt"]
+  },
+  {
+    "title": "ときめき太鼓塾新歓パフォーマンス",
+    "orgPageId": "03020",
+    "startsAt": "15:25:00",
+    "endsAt": "15:45:00",
+    "credits": ["ときめき太鼓塾"]
+  },
+  {
+    "title": "一撥入魂！新歓 Welcome LIVE！！",
+    "orgPageId": "03015",
+    "startsAt": "15:45:00",
+    "endsAt": "16:05:00",
+    "credits": ["津軽三味線倶楽部無絃塾"]
+  },
+  {
+    "title": "アンプラグド新歓祭ライブ",
+    "orgPageId": "08007",
+    "startsAt": "16:20:00",
+    "endsAt": "16:40:00",
+    "credits": ["弾き語りクラブ アンプラグド"]
+  },
+  {
+    "title": "少林寺拳法",
+    "orgPageId": null,
+    "startsAt": "16:40:00",
+    "endsAt": "17:00:00",
+    "credits": ["少林寺拳法部"]
+  },
+  {
+    "title": "ダブルダッチパフォーマンス",
+    "orgPageId": "08004",
+    "startsAt": "17:00:00",
+    "endsAt": "17:20:00",
+    "credits": ["ダブルダッチサークル purplume"]
+  },
+  {
+    "title": "筑波大学ジャズ楽団 Neopolis BIGBAND",
+    "orgPageId": "03035",
+    "startsAt": "17:20:00",
+    "endsAt": "17:40:00",
+    "credits": ["筑波大学ジャズ楽団 Neopolis BIGBAND"]
+  },
+  {
+    "title": "ラクタだって踊りたい！@新歓祭",
+    "orgPageId": "01016",
+    "startsAt": "17:40:00",
+    "endsAt": "18:00:00",
+    "credits": ["現代視覚文化研究会"]
+  }
+]
