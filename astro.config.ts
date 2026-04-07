@@ -9,6 +9,7 @@ import sitemap from "@astrojs/sitemap";
 dotenv.config();
 // const siteUrl = process.env.CF_PAGES_URL ?? "https://shinkan-web.zdk.tsukuba.ac.jp";
 const siteUrl = "https://shinkan-web.zdk.tsukuba.ac.jp";
+
 const count: Record<string, number> = {};
 try {
   const orgs = await getOrganizations(process.env.STATIC_DATA_URL);

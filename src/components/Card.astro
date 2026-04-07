@@ -5,21 +5,22 @@ import type { OrganizationCategory, ImageAttribute } from "../types";
 import { lookupOrganizationCategoryName } from "../utils/organization";
 
 export type Props = {
-  id: number;
+  id: string;
   name: string;
   category: OrganizationCategory;
   short_description: string;
   thumbnail: ImageAttribute;
+  hidden?: boolean;
 };
 
-const { name, category, short_description, id, thumbnail } = Astro.props;
+const { name, category, short_description, id, thumbnail, hidden = false } = Astro.props;
 
 const thumbnailImage = (() => {
   return thumbnail;
 })();
 ---
 
-<article>
+<article data-org-card data-org-id={id} data-org-category={category} hidden={hidden}>
   <a href={`/orgs/${id}`} class="link">
     <div class="thumbnail">
       <Image
