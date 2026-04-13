@@ -137,6 +137,7 @@ const counts: any = process.env.CATEGORY_COUNTS ?? [];
 </style>
 
 <script>
+  import { buildSearchAliases, normalizeSearchText } from "../utils/search";
   import { loadFavoriteGroups } from "../lib/fav";
 
   const search = document.querySelector(".search")! as HTMLFormElement;
@@ -181,25 +182,27 @@ const counts: any = process.env.CATEGORY_COUNTS ?? [];
   });
   await pagefind.init();
 
-  const normalizeSearchText = (value: string) => value.normalize("NFKC").toLowerCase().replace(/\s+/g, "");
-
   const scoreOrgResult = (org: any, query: string) => {
-    const normalizedQuery = normalizeSearchText(query);
-    if (normalizedQuery.length === 0) return 0;
+    const normalizedQueries = buildSearchAliases(query).map((alias) => normalizeSearchText(alias));
+    if (normalizedQueries.length === 0) return 0;
 
     const title = normalizeSearchText(org.meta?.title ?? "");
     const keywords = normalizeSearchText(org.meta?.keywords ?? "");
     const kana = normalizeSearchText(org.meta?.kana ?? "");
 
-    let score = 0;
+    return normalizedQueries.reduce((bestScore, normalizedQuery) => {
+      let score = 0;
 
-    if (title === normalizedQuery) score += 300;
-    if (title.startsWith(normalizedQuery)) score += 180;
-    if (title.includes(normalizedQuery)) score += 120;
-    if (keywords.includes(normalizedQuery)) score += 80;
-    if (kana.includes(normalizedQuery)) score += 60;
+      if (title === normalizedQuery) score += 300;
+      if (title.startsWith(normalizedQuery)) score += 180;
+      if (title.includes(normalizedQuery)) score += 120;
+      if (keywords.includes(normalizedQuery)) score += 80;
+      if (kana === normalizedQuery) score += 240;
+      if (kana.startsWith(normalizedQuery)) score += 180;
+      if (kana.includes(normalizedQuery)) score += 120;
 
-    return score;
+      return Math.max(bestScore, score);
+    }, 0);
   };
 
   let lastSearchQuery = "";
@@ -214,16 +217,47 @@ const counts: any = process.env.CATEGORY_COUNTS ?? [];
     }
 
     const token = ++latestSearchToken;
-    const searchResults = await pagefind.search(query);
-    const orgs = await Promise.all(searchResults.results.map((r: any) => r.data()));
+    const aliases = buildSearchAliases(query);
+    if (aliases.length === 0) {
+      lastSearchQuery = query;
+      lastSearchIds = [];
+      return [];
+    }
 
-    const rankedOrgs = orgs
-      .map((org, index) => ({
+    const searches = await Promise.all(
+      aliases.map(async (alias, aliasIndex) => {
+        const searchResults = await pagefind.search(alias);
+        return searchResults.results.map((result: any, resultIndex: number) => ({
+          result,
+          aliasIndex,
+          resultIndex,
+        }));
+      })
+    );
+
+    const mergedResults = new Map<string, { org: any; rank: number }>();
+
+    for (const resultGroup of searches) {
+      for (const { result, aliasIndex, resultIndex } of resultGroup) {
+        const rank = aliasIndex * 1000 + resultIndex;
+        const url = result.url as string;
+        const existing = mergedResults.get(url);
+        if (existing && existing.rank <= rank) continue;
+
+        mergedResults.set(url, {
+          org: await result.data(),
+          rank,
+        });
+      }
+    }
+
+    const rankedOrgs = [...mergedResults.values()]
+      .map(({ org, rank }) => ({
         org,
-        index,
+        rank,
         score: scoreOrgResult(org, query),
       }))
-      .sort((a, b) => b.score - a.score || a.index - b.index)
+      .sort((a, b) => b.score - a.score || a.rank - b.rank)
       .map(({ org }) => org);
 
     const ids = rankedOrgs
@@ -340,7 +374,7 @@ const counts: any = process.env.CATEGORY_COUNTS ?? [];
   text.addEventListener("input", () => {
     const query = text.value.trim();
     if (query.length > 0) {
-      pagefind.preload(query);
+      buildSearchAliases(query).forEach((alias) => pagefind.preload(alias));
     } else {
       lastSearchQuery = "";
       lastSearchIds = null;

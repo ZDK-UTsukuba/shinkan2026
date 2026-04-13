@@ -3,8 +3,8 @@
  */
 
 // 各プラットフォームのURLパターンを検出する正規表現
-const YOUTUBE_REGEX =
-  /(?<![\w[\("'])https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(?![\w\]\)"'])/g;
+const YOUTUBE_LINK_REGEX =
+  /<a\s+[^>]*href=(["'])(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?[^"'<>]*|youtu\.be\/[^"'<>]+))\1[^>]*>([^<]+)<\/a>/g;
 const TWITTER_REGEX =
   /(?<![\w[\("'])https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\/([a-zA-Z0-9_]+)\/status\/([0-9]+)(?![\w\]\)"'])/g;
 const INSTAGRAM_REGEX =
@@ -27,6 +27,35 @@ function createYouTubeEmbed(videoId: string): string {
       loading="lazy"
     ></iframe>
   </div>`;
+}
+
+/**
+ * YouTube URLから動画IDを抽出する
+ * @param url YouTube URL
+ * @returns 動画ID。抽出できない場合はnull
+ */
+function extractYouTubeVideoId(url: string): string | null {
+  try {
+    const parsedUrl = new URL(url);
+
+    if (parsedUrl.hostname === "youtu.be") {
+      const videoId = parsedUrl.pathname.slice(1);
+      return /^[a-zA-Z0-9_-]{11}$/.test(videoId) ? videoId : null;
+    }
+
+    if (parsedUrl.hostname === "youtube.com" || parsedUrl.hostname === "www.youtube.com") {
+      if (parsedUrl.pathname !== "/watch") {
+        return null;
+      }
+
+      const videoId = parsedUrl.searchParams.get("v");
+      return videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId) ? videoId : null;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
 }
 
 /**
@@ -70,8 +99,15 @@ function createInstagramEmbed(postId: string): string {
  */
 export function processEmbeds(html: string): string {
   // YouTube埋め込み
-  html = html.replace(YOUTUBE_REGEX, (match, videoId) => {
-    return createYouTubeEmbed(videoId);
+  html = html.replace(YOUTUBE_LINK_REGEX, (match, _quote, url, label) => {
+    const isPlainUrlLabel = label === url || label === url.replaceAll("&", "&amp;");
+
+    if (!isPlainUrlLabel) {
+      return match;
+    }
+
+    const videoId = extractYouTubeVideoId(url);
+    return videoId ? createYouTubeEmbed(videoId) : match;
   });
 
   // Twitter埋め込み
